@@ -22,7 +22,7 @@ export default function AttendPage() {
 
   useEffect(() => {
     fetch(`${API_URL}/api/attend/info`)
-      .then(r => r.json<OfficeInfo>())
+      .then(r => r.json() as Promise<OfficeInfo>)
       .then(setOfficeInfo)
       .catch(() => {})
   }, [])
@@ -64,7 +64,7 @@ export default function AttendPage() {
         body: JSON.stringify({ email, password, type, ...coords }),
       })
 
-      const data = await res.json<AttendResult & { error?: string }>()
+      const data = await res.json() as AttendResult & { error?: string }
 
       if (!res.ok) {
         setResult({ success: false, message: data.error || 'Gagal merekod kehadiran' })

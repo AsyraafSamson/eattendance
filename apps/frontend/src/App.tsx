@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Component, ReactNode } from 'react';
+import { Component } from 'react';
+import type { ReactNode, ReactElement } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -34,7 +35,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
   }
 }
 
-function PrivateRoute({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: string[] }) {
+function PrivateRoute({ children, allowedRoles }: { children: ReactElement; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex justify-center p-8 text-gray-500">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
