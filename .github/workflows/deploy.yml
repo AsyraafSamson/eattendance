@@ -5,29 +5,6 @@ on:
     branches: [main]
 
 jobs:
-  deploy-api:
-    runs-on: ubuntu-latest
-    name: Deploy API Worker
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Install API dependencies
-        run: cd apps/api && pnpm install
-
-      - name: Deploy API to Cloudflare Workers
-        run: cd apps/api && npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
   deploy-frontend:
     runs-on: ubuntu-latest
     name: Deploy Frontend to Cloudflare Pages
