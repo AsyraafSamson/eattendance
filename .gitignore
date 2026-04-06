@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+*.local
+.env
+.env.local
+.dev.vars
+*.log
+.DS_Store
+Thumbs.db
+restart-frontend.bat
+apps/api-backup/

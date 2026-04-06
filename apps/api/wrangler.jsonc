@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "eattendance-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-06",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "OFFICE_LAT": "1.5273",
+    "OFFICE_LNG": "103.7010",
+    "OFFICE_RADIUS_METERS": "100",
+    "OFFICE_NAME": "ILKKM Johor Bahru",
+    "DEV_MODE": "false"
+  },
+  // "kv_namespaces": [
+  //   {
+  //     "binding": "MY_KV_NAMESPACE",
+  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  //   }
+  // ],
+  // "r2_buckets": [
+  //   {
+  //     "binding": "MY_BUCKET",
+  //     "bucket_name": "my-bucket"
+  //   }
+  // ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "eattendance-db",
+      "database_id": "46a1e31c-8742-4cfb-be64-f1e962a4305f"
+    }
+  ],
+  // "ai": {
+  //   "binding": "AI"
+  // },
+  // "observability": {
+  //   "enabled": true,
+  //   "head_sampling_rate": 1
+  // }
+}
