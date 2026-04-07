@@ -26,11 +26,7 @@ jobs:
         run: cd apps/frontend && pnpm build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: eattendance
-          directory: apps/frontend/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+        run: npx wrangler pages deploy apps/frontend/dist --project-name=eattendance --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
