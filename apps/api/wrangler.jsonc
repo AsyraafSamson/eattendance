@@ -9,7 +9,7 @@
   "vars": {
     "OFFICE_LAT": "1.5273",
     "OFFICE_LNG": "103.7010",
-    "OFFICE_RADIUS_METERS": "100",
+    "OFFICE_RADIUS_METERS": "1000",
     "OFFICE_NAME": "ILKKM Johor Bahru",
     "DEV_MODE": "false"
   },
