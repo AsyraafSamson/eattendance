@@ -59,7 +59,7 @@ export default function AdminQR() {
 
           <div style={{ backgroundColor: '#f3f4f6', borderRadius: '0.75rem', padding: '0.75rem' }}>
             <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.25rem' }}>Atau buka terus:</p>
-            <p style={{ fontSize: '0.75rem', color: '#2563eb', fontFamily: 'monospace', wordBreak: 'break-all' }}>{ATTEND_URL}</p>
+            <a href={ATTEND_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#2563eb', fontFamily: 'monospace', wordBreak: 'break-all', textDecoration: 'underline' }}>{ATTEND_URL}</a>
           </div>
 
           <p style={{ fontSize: '0.75rem', color: '#d1d5db', marginTop: '1rem' }}>
