@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8788';
 
 type AttendanceRecord = {
   id: string;

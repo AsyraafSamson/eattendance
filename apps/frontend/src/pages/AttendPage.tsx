@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8788'
 
 type OfficeInfo = { officeName: string; devMode: boolean }
 type TodayRecord = { type: string; timestamp: string }

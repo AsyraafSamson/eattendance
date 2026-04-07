@@ -16,7 +16,7 @@ type AuthContextType = {
   logout: () => void;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8788';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
