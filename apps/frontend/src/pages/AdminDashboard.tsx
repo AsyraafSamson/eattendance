@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8788';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 type AttendanceRecord = {
   id: string;
@@ -54,6 +54,9 @@ export default function AdminDashboard() {
           </Link>
           <Link to="/admin/users" className="bg-gray-700 text-white text-xs px-3 py-2 rounded-lg hover:bg-gray-800 font-medium">
             👥 <span className="hidden sm:inline">Pengguna</span>
+          </Link>
+          <Link to="/admin/reports" className="bg-purple-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-purple-700 font-medium">
+            📊 <span className="hidden sm:inline">Laporan</span>
           </Link>
           <span className="text-sm text-gray-600 hidden sm:inline">{user?.name}</span>
           <button onClick={logout} className="text-red-500 text-xs hover:underline border border-red-200 px-2 py-2 rounded-lg">Keluar</button>

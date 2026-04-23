@@ -13,12 +13,27 @@ type AuthContextType = {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (token: string, user: User) => void;
   logout: () => void;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8788';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function isStoredUser(value: unknown): value is User {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.role === 'string' &&
+    ['employee', 'manager', 'admin'].includes(candidate.role) &&
+    typeof candidate.employee_id === 'string'
+  );
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -28,10 +43,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
+
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser: unknown = JSON.parse(storedUser);
+
+        if (isStoredUser(parsedUser)) {
+          setToken(storedToken);
+          setUser(parsedUser);
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
+
     setLoading(false);
   }, []);
 
@@ -49,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(data.user));
   };
 
+  const loginWithGoogle = (googleToken: string, googleUser: User) => {
+    setToken(googleToken);
+    setUser(googleUser);
+    localStorage.setItem('token', googleToken);
+    localStorage.setItem('user', JSON.stringify(googleUser));
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -57,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

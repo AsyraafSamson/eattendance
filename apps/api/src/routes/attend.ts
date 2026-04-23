@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
-import type { Bindings, Variables, User } from '../types'
+import type { Bindings, Variables, User, AttendanceRecord } from '../types'
 import { getDistanceMeters } from '../lib/geo'
 
 const attend = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -12,11 +12,10 @@ attend.post('/', async (c) => {
     email: string
     password: string
     type: 'check-in' | 'check-out'
-    lat: number
-    lng: number
+    lat?: number
+    lng?: number
   }>()
 
-  // Validate inputs
   if (!email || !password || !type) {
     return c.json({ error: 'Email, password and type are required' }, 400)
   }
@@ -24,9 +23,9 @@ attend.post('/', async (c) => {
     return c.json({ error: 'type must be check-in or check-out' }, 400)
   }
 
-  // GPS check (skip in DEV_MODE)
   const devMode = c.env.DEV_MODE === 'true'
 
+  // GPS check (skip in DEV_MODE)
   if (!devMode) {
     if (lat === undefined || lng === undefined) {
       return c.json({ error: 'Location access required' }, 400)
@@ -55,15 +54,28 @@ attend.post('/', async (c) => {
     return c.json({ error: 'Email atau password salah' }, 401)
   }
 
-  // Record attendance
-  await c.env.DB.prepare(
-    'INSERT INTO attendance (user_id, type, source) VALUES (?, ?, ?)'
-  ).bind(user.id, type, 'qr').run()
-
-  // Fetch today's records for this user (Malaysia time = UTC+8)
-  const todayUTC = new Date(Date.now() - ((Date.now() % 86400000) - 8*3600000 > 86400000 ? 0 : 0))
+  // Duplicate punch prevention — check last record today
   const todayMY = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const lastRecord = await c.env.DB.prepare(
+    `SELECT type FROM attendance
+     WHERE user_id = ? AND date(timestamp, '+8 hours') = ?
+     ORDER BY timestamp DESC LIMIT 1`
+  ).bind(user.id, todayMY).first<{ type: string }>()
 
+  if (lastRecord?.type === type) {
+    return c.json({
+      error: type === 'check-in'
+        ? 'Anda sudah check-in hari ini'
+        : 'Anda sudah check-out hari ini',
+    }, 409)
+  }
+
+  // Record attendance with GPS coords
+  await c.env.DB.prepare(
+    'INSERT INTO attendance (user_id, type, source, lat, lng) VALUES (?, ?, ?, ?, ?)'
+  ).bind(user.id, type, 'qr', lat ?? null, lng ?? null).run()
+
+  // Fetch today's updated records
   const todayRecords = await c.env.DB.prepare(
     `SELECT type, timestamp FROM attendance
      WHERE user_id = ? AND date(timestamp, '+8 hours') = ?

@@ -31,3 +31,15 @@ export const adminOnly = async (
   }
   await next()
 }
+
+// Allows both manager and admin
+export const managerOrAdmin = async (
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+  next: Next
+) => {
+  const role = c.get('userRole')
+  if (role !== 'manager' && role !== 'admin') {
+    return c.json({ error: 'Forbidden: manager or admin only' }, 403)
+  }
+  await next()
+}

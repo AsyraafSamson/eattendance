@@ -7,7 +7,11 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminQR from './pages/AdminQR';
 import AdminUsers from './pages/AdminUsers';
+import AdminReports from './pages/AdminReports';
 import AttendPage from './pages/AttendPage';
+import ManagerDashboard from './pages/ManagerDashboard';
+import TimesheetPage from './pages/TimesheetPage';
+import PTOPage from './pages/PTOPage';
 
 // Catch any React render crash — shows error instead of blank white page
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -35,12 +39,24 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
   }
 }
 
+function homeForRole(role?: string) {
+  if (role === 'admin') return '/admin';
+  if (role === 'manager') return '/manager';
+  if (role === 'employee') return '/';
+  return '/login';
+}
+
+function isKnownRole(role?: string): role is 'employee' | 'manager' | 'admin' {
+  return role === 'employee' || role === 'manager' || role === 'admin';
+}
+
 function PrivateRoute({ children, allowedRoles }: { children: ReactElement; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex justify-center p-8 text-gray-500">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (!isKnownRole(user.role)) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/'} replace />;
+    return <Navigate to={homeForRole(user.role)} replace />;
   }
   return children;
 }
@@ -55,12 +71,29 @@ function AppRoutes() {
       <Route path="/attend" element={<AttendPage />} />
 
       {/* Auth */}
-      <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'admin' ? '/admin' : '/'} replace />} />
+      <Route path="/login" element={!user || !isKnownRole(user.role) ? <Login /> : <Navigate to={homeForRole(user.role)} replace />} />
 
       {/* Employee */}
       <Route path="/" element={
         <PrivateRoute allowedRoles={['employee']}>
           <EmployeeDashboard />
+        </PrivateRoute>
+      } />
+      <Route path="/timesheet" element={
+        <PrivateRoute allowedRoles={['employee', 'manager', 'admin']}>
+          <TimesheetPage />
+        </PrivateRoute>
+      } />
+      <Route path="/pto" element={
+        <PrivateRoute allowedRoles={['employee', 'manager', 'admin']}>
+          <PTOPage />
+        </PrivateRoute>
+      } />
+
+      {/* Manager */}
+      <Route path="/manager" element={
+        <PrivateRoute allowedRoles={['manager', 'admin']}>
+          <ManagerDashboard />
         </PrivateRoute>
       } />
 
@@ -80,8 +113,13 @@ function AppRoutes() {
           <AdminUsers />
         </PrivateRoute>
       } />
+      <Route path="/admin/reports" element={
+        <PrivateRoute allowedRoles={['admin']}>
+          <AdminReports />
+        </PrivateRoute>
+      } />
 
-      <Route path="*" element={<Navigate to={user?.role === 'admin' ? '/admin' : '/login'} replace />} />
+      <Route path="*" element={<Navigate to={user && isKnownRole(user.role) ? homeForRole(user.role) : '/login'} replace />} />
     </Routes>
   );
 }
