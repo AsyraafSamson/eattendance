@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
+import { formatMalaysiaTime, getMalaysiaToday } from '../lib/date';
 
 type AttendanceRecord = {
   id: string;
@@ -17,15 +17,15 @@ export default function AdminDashboard() {
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [date, setDate] = useState(() => new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => getMalaysiaToday());
   const [fetching, setFetching] = useState(false);
 
   const fetchAttendance = useCallback(async () => {
     if (!token) return;
     setFetching(true);
     try {
-      const res = await fetch(`${API_URL}/api/attendance/all?date=${date}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await apiFetch(`/api/attendance/all?date=${date}`, {
+        token,
       });
       if (res.status === 401) { logout(); navigate('/login'); return; }
       const data = await res.json();
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
                           {record.type === 'check-in' ? '✅ Check In' : '🔴 Check Out'}
                         </span>
                         <p className="text-xs text-gray-400 mt-1">
-                          {new Date(record.timestamp.replace(' ', 'T') + 'Z').toLocaleTimeString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit' })}
+                          {formatMalaysiaTime(record.timestamp)}
                         </p>
                       </div>
                     </div>
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="p-3 text-gray-500">
-                          {new Date(record.timestamp.replace(' ', 'T') + 'Z').toLocaleTimeString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          {formatMalaysiaTime(record.timestamp, { second: '2-digit' })}
                         </td>
                       </tr>
                     ))}

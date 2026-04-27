@@ -2,8 +2,11 @@
   "name": "api",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/generate-wrangler-config.mjs",
     "dev": "wrangler dev --local",
+    "predeploy": "node scripts/generate-wrangler-config.mjs",
     "deploy": "wrangler deploy --minify",
+    "precf-typegen": "node scripts/generate-wrangler-config.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {

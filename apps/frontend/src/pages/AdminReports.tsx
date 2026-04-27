@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch, apiUrl } from '../lib/api';
+import { getCurrentMalaysiaMonthPeriod } from '../lib/date';
 
 type ReportEmployee = {
   user_id: string;
@@ -30,27 +30,17 @@ type Report = {
   };
 };
 
-function getDefaultPeriod() {
-  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const last = new Date(y, now.getMonth() + 1, 0).getDate();
-  return { start: `${y}-${m}-01`, end: `${y}-${m}-${last}` };
-}
-
 export default function AdminReports() {
   const { token, logout } = useAuth();
-  const def = getDefaultPeriod();
+  const def = getCurrentMalaysiaMonthPeriod();
   const [start, setStart] = useState(def.start);
   const [end, setEnd] = useState(def.end);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
-  const headers = { Authorization: `Bearer ${token}` };
-
   const fetchReport = async () => {
     if (!start || !end) { alert('Sila pilih tempoh'); return; }
     setLoading(true);
-    const res = await fetch(`${API_URL}/api/reports/payroll?period_start=${start}&period_end=${end}`, { headers });
+    const res = await apiFetch(`/api/reports/payroll?period_start=${start}&period_end=${end}`, { token });
     const data = await res.json();
     if (!res.ok) { alert(data.error); setLoading(false); return; }
     setReport(data);
@@ -58,7 +48,7 @@ export default function AdminReports() {
   };
 
   const downloadCSV = () => {
-    window.open(`${API_URL}/api/reports/payroll/csv?period_start=${start}&period_end=${end}`, '_blank');
+    window.open(apiUrl(`/api/reports/payroll/csv?period_start=${start}&period_end=${end}`), '_blank');
   };
 
   return (

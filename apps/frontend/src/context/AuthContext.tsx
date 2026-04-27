@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { apiFetch } from '../lib/api';
 
 type User = {
   id: string;
@@ -16,8 +17,6 @@ type AuthContextType = {
   loginWithGoogle: (token: string, user: User) => void;
   logout: () => void;
 };
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -65,9 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();

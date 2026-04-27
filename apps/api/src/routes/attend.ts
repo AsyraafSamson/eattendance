@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
 import type { Bindings, Variables, User, AttendanceRecord } from '../types'
 import { getDistanceMeters } from '../lib/geo'
+import { getAppSettings } from '../lib/settings'
 
 const attend = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
@@ -24,6 +25,7 @@ attend.post('/', async (c) => {
   }
 
   const devMode = c.env.DEV_MODE === 'true'
+  const settings = await getAppSettings(c.env.DB)
 
   // GPS check (skip in DEV_MODE)
   if (!devMode) {
@@ -31,14 +33,11 @@ attend.post('/', async (c) => {
       return c.json({ error: 'Location access required' }, 400)
     }
 
-    const officeLat = parseFloat(c.env.OFFICE_LAT)
-    const officeLng = parseFloat(c.env.OFFICE_LNG)
-    const radius = parseFloat(c.env.OFFICE_RADIUS_METERS)
-    const distance = getDistanceMeters(lat, lng, officeLat, officeLng)
+    const distance = getDistanceMeters(lat, lng, settings.officeLat, settings.officeLng)
 
-    if (distance > radius) {
+    if (distance > settings.officeRadiusMeters) {
       return c.json({
-        error: `Anda tidak berada di lokasi pejabat. Jarak: ${Math.round(distance)}m (had: ${radius}m)`,
+        error: `Anda tidak berada di lokasi pejabat. Jarak: ${Math.round(distance)}m (had: ${settings.officeRadiusMeters}m)`,
         distance: Math.round(distance),
         allowed: false,
       }, 403)
@@ -94,9 +93,10 @@ attend.post('/', async (c) => {
 })
 
 // GET /api/attend/info — returns office info for the attend page
-attend.get('/info', (c) => {
+attend.get('/info', async (c) => {
+  const settings = await getAppSettings(c.env.DB)
   return c.json({
-    officeName: c.env.OFFICE_NAME,
+    officeName: settings.officeName,
     devMode: c.env.DEV_MODE === 'true',
   })
 })

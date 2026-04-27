@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
 
 type User = {
   id: string;
@@ -50,7 +49,7 @@ export default function AdminUsers() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiFetch('/api/users', { token });
       if (res.status === 401) { logout(); navigate('/login'); return; }
       const data = await res.json();
       if (Array.isArray(data)) setUsers(data);
@@ -79,9 +78,9 @@ export default function AdminUsers() {
       const body: Record<string, unknown> = { ...addForm, pto_balance: parseFloat(addForm.pto_balance) || 0 };
       if (!body.manager_id) delete body.manager_id;
       if (!body.department) delete body.department;
-      const res = await fetch(`${API_URL}/api/users`, {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        token,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -111,9 +110,9 @@ export default function AdminUsers() {
         manager_id: editForm.manager_id || null,
         pto_balance: parseFloat(editForm.pto_balance) || 0,
       };
-      const res = await fetch(`${API_URL}/api/users/${editTarget.id}`, {
+      const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        token,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -124,13 +123,13 @@ export default function AdminUsers() {
   };
 
   const handleToggle = async (user: User) => {
-    const res = await fetch(`${API_URL}/api/users/${user.id}/toggle`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+    const res = await apiFetch(`/api/users/${user.id}/toggle`, { method: 'PATCH', token });
     if (res.ok) fetchUsers();
   };
 
   const handleDelete = async (user: User) => {
     if (!confirm(`Padam pengguna "${user.name}"? Tindakan ini tidak boleh dibuat alik.`)) return;
-    const res = await fetch(`${API_URL}/api/users/${user.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    const res = await apiFetch(`/api/users/${user.id}`, { method: 'DELETE', token });
     const data = await res.json();
     if (!res.ok) { alert(data.error); return; }
     fetchUsers();
@@ -141,9 +140,9 @@ export default function AdminUsers() {
     if (!resetTarget) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/users/${resetTarget.id}/password`, {
+      const res = await apiFetch(`/api/users/${resetTarget.id}/password`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        token,
         body: JSON.stringify({ password: newPassword }),
       });
       const data = await res.json();

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Bindings, Variables } from './types'
+import { getAppSettings } from './lib/settings'
 import auth from './routes/auth'
 import attendance from './routes/attendance'
 import attend from './routes/attend'
@@ -17,11 +17,36 @@ import googleAuth from './routes/google-auth'
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 app.use('*', logger())
-app.use('*', cors({
-  origin: ['http://localhost:5173', 'https://eattendance.pages.dev'],
-  allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
-}))
+app.use('*', async (c, next) => {
+  const requestOrigin = c.req.header('Origin')
+
+  if (!requestOrigin) {
+    await next()
+    return
+  }
+
+  const { frontendUrl } = await getAppSettings(c.env.DB)
+
+  if (requestOrigin !== frontendUrl) {
+    if (c.req.method === 'OPTIONS') {
+      return c.body(null, 403)
+    }
+
+    await next()
+    return
+  }
+
+  c.header('Access-Control-Allow-Origin', requestOrigin)
+  c.header('Vary', 'Origin')
+  c.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+
+  if (c.req.method === 'OPTIONS') {
+    return c.body(null, 204)
+  }
+
+  await next()
+})
 
 // Health check + DB connection test
 app.get('/', async (c) => {
@@ -33,8 +58,6 @@ app.get('/', async (c) => {
     status: 'ok',
     db: 'connected',
     users: result?.total ?? 0,
-    office: c.env.OFFICE_NAME,
-    devMode: c.env.DEV_MODE === 'true',
   })
 })
 

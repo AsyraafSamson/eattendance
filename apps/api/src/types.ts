@@ -1,14 +1,9 @@
 export type Bindings = {
   DB: D1Database
   JWT_SECRET: string
-  OFFICE_LAT: string
-  OFFICE_LNG: string
-  OFFICE_RADIUS_METERS: string
-  OFFICE_NAME: string
   DEV_MODE: string
   GOOGLE_CLIENT_ID: string
   GOOGLE_CLIENT_SECRET: string
-  FRONTEND_URL: string
 }
 
 export type Variables = {
@@ -121,4 +116,10 @@ export type Notification = {
   message: string
   is_read: number
   created_at: string
+}
+
+export type AppSetting = {
+  key: string
+  value: string
+  updated_at: string
 }

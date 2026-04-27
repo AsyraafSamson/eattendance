@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
+import { apiFetch, apiUrl, fetchPublicAppInfo, type PublicAppInfo } from '../lib/api'
+import { formatMalaysiaDate, formatMalaysiaTime } from '../lib/date'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787'
-
-type OfficeInfo = { officeName: string; devMode: boolean }
 type TodayRecord = { type: string; timestamp: string }
 type AttendResult = {
   success: boolean
@@ -18,14 +17,11 @@ export default function AttendPage() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [result, setResult] = useState<AttendResult | null>(null)
-  const [officeInfo, setOfficeInfo] = useState<OfficeInfo | null>(null)
+  const [officeInfo, setOfficeInfo] = useState<PublicAppInfo | null>(null)
   const [gpsError, setGpsError] = useState('')
 
   useEffect(() => {
-    fetch(`${API_URL}/api/attend/info`)
-      .then(r => r.json() as Promise<OfficeInfo>)
-      .then(setOfficeInfo)
-      .catch(() => {})
+    void fetchPublicAppInfo().then(setOfficeInfo).catch(() => {})
 
     // Handle Google OAuth callback result
     const params = new URLSearchParams(window.location.search)
@@ -88,7 +84,7 @@ export default function AttendPage() {
         }
       }
       const params = new URLSearchParams({ type, ...coords })
-      window.location.href = `${API_URL}/api/auth/google/start?${params.toString()}`
+      window.location.href = `${apiUrl('/api/auth/google/start')}?${params.toString()}`
     } catch {
       setGpsError('Ralat memulakan log masuk Google.')
       setGoogleLoading(false)
@@ -113,9 +109,8 @@ export default function AttendPage() {
         }
       }
 
-      const res = await fetch(`${API_URL}/api/attend`, {
+      const res = await apiFetch('/api/attend', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, type, ...coords }),
       })
 
@@ -134,16 +129,6 @@ export default function AttendPage() {
       setLoading(false)
     }
   }
-
-  const formatTime = (ts: string) =>
-    new Date(ts.replace(' ', 'T') + 'Z').toLocaleTimeString('ms-MY', {
-      timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit'
-    })
-
-  const formatDate = (ts: string) =>
-    new Date(ts.replace(' ', 'T') + 'Z').toLocaleDateString('ms-MY', {
-      timeZone: 'Asia/Kuala_Lumpur', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    })
 
   return (
     <div className="min-h-screen bg-blue-50 flex items-start justify-center p-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
@@ -175,7 +160,7 @@ export default function AttendPage() {
             {result.todayRecords && result.todayRecords.length > 0 && (
               <div className="mb-5">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">📋 Rekod Hari Ini</p>
-                <p className="text-xs text-gray-400 mb-3">{formatDate(result.todayRecords[0].timestamp)}</p>
+                <p className="text-xs text-gray-400 mb-3">{formatMalaysiaDate(result.todayRecords[0].timestamp)}</p>
                 <div className="bg-gray-50 rounded-2xl overflow-hidden divide-y divide-gray-100">
                   {result.todayRecords.map((rec, i) => (
                     <div key={i} className="flex justify-between items-center px-4 py-3">
@@ -185,7 +170,7 @@ export default function AttendPage() {
                           {rec.type === 'check-in' ? 'Check In' : 'Check Out'}
                         </span>
                       </div>
-                      <span className="text-sm text-gray-400 font-mono">{formatTime(rec.timestamp)}</span>
+                      <span className="text-sm text-gray-400 font-mono">{formatMalaysiaTime(rec.timestamp)}</span>
                     </div>
                   ))}
                 </div>

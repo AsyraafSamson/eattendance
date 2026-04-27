@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
+import { formatMalaysiaTime, getMalaysiaToday } from '../lib/date';
 
 type AttendanceRow = {
   id: string;
@@ -41,28 +41,20 @@ type PendingPTO = {
   pto_balance: number;
 };
 
-function fmtTime(ts: string | null) {
-  if (!ts) return '–';
-  return new Date(ts.replace(' ', 'T') + (ts.includes('+') ? '' : 'Z'))
-    .toLocaleTimeString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit' });
-}
-
 export default function ManagerDashboard() {
   const { token, user, logout } = useAuth();
-  const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const today = getMalaysiaToday();
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [date, setDate] = useState(today);
   const [pendingTS, setPendingTS] = useState<PendingTimesheet[]>([]);
   const [pendingPTO, setPendingPTO] = useState<PendingPTO[]>([]);
   const [loading, setLoading] = useState(false);
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
   const fetchAll = useCallback(async () => {
     if (!token) return;
     const [attRes, tsRes, ptoRes] = await Promise.all([
-      fetch(`${API_URL}/api/manager/attendance?date=${date}`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${API_URL}/api/manager/timesheets/pending`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${API_URL}/api/manager/pto/pending`, { headers: { Authorization: `Bearer ${token}` } }),
+      apiFetch(`/api/manager/attendance?date=${date}`, { token }),
+      apiFetch('/api/manager/timesheets/pending', { token }),
+      apiFetch('/api/manager/pto/pending', { token }),
     ]);
     const [att, ts, pto] = await Promise.all([attRes.json(), tsRes.json(), ptoRes.json()]);
     if (Array.isArray(att)) setAttendance(att);
@@ -74,10 +66,11 @@ export default function ManagerDashboard() {
 
   const reviewTS = async (id: string, action: 'approve' | 'reject', notes?: string) => {
     setLoading(true);
-    const res = await fetch(`${API_URL}/api/timesheets/${id}/${action}`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ notes }),
-    });
+      const res = await apiFetch(`/api/timesheets/${id}/${action}`, {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ notes }),
+      });
     if (res.ok) {
       setPendingTS(prev => prev.filter(t => t.id !== id));
     } else {
@@ -89,10 +82,11 @@ export default function ManagerDashboard() {
 
   const reviewPTO = async (id: string, action: 'approve' | 'reject', notes?: string) => {
     setLoading(true);
-    const res = await fetch(`${API_URL}/api/pto/${id}/${action}`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ notes }),
-    });
+      const res = await apiFetch(`/api/pto/${id}/${action}`, {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ notes }),
+      });
     if (res.ok) {
       setPendingPTO(prev => prev.filter(p => p.id !== id));
     } else {
@@ -166,8 +160,8 @@ export default function ManagerDashboard() {
                         <p className="font-medium">{row.name}</p>
                         <p className="text-xs text-gray-400">{row.employee_id} {row.department ? `· ${row.department}` : ''}</p>
                       </td>
-                      <td className="py-2 text-green-600">{fmtTime(row.check_in)}</td>
-                      <td className="py-2 text-orange-600">{fmtTime(row.check_out)}</td>
+                       <td className="py-2 text-green-600">{formatMalaysiaTime(row.check_in)}</td>
+                       <td className="py-2 text-orange-600">{formatMalaysiaTime(row.check_out)}</td>
                       <td className="py-2">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${row.check_in ? (row.check_out ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700') : 'bg-red-100 text-red-600'}`}>
                           {row.check_in ? (row.check_out ? 'Selesai' : 'Bekerja') : 'Tidak Hadir'}

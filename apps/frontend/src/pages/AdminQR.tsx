@@ -1,13 +1,18 @@
+import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
+import { fetchPublicAppInfo } from '../lib/api'
 
 const ATTEND_URL = `${window.location.origin}/attend`
 
 export default function AdminQR() {
   const { user, logout } = useAuth()
+  const [officeName, setOfficeName] = useState('Memuatkan...')
 
-  console.log('[AdminQR] rendering, user=', user, 'attendUrl=', ATTEND_URL)
+  useEffect(() => {
+    void fetchPublicAppInfo().then((info) => setOfficeName(info.officeName)).catch(() => {})
+  }, [])
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
@@ -40,7 +45,7 @@ export default function AdminQR() {
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏥</div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>E-Attendance</h1>
-            <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>ILKKM Johor Bahru</p>
+            <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>{officeName}</p>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.75rem' }}>

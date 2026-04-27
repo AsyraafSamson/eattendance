@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
 
 type PTORequest = {
   id: string;
@@ -36,14 +35,12 @@ export default function PTOPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ type: 'annual', start_date: '', end_date: '', reason: '' });
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
   const fetchData = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     const [reqRes, balRes] = await Promise.all([
-      fetch(`${API_URL}/api/pto/my`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${API_URL}/api/pto/balance`, { headers: { Authorization: `Bearer ${token}` } }),
+      apiFetch('/api/pto/my', { token }),
+      apiFetch('/api/pto/balance', { token }),
     ]);
     const [reqs, bal] = await Promise.all([reqRes.json(), balRes.json()]);
     if (Array.isArray(reqs)) setRequests(reqs);
@@ -57,8 +54,9 @@ export default function PTOPage() {
     if (!form.start_date || !form.end_date) { alert('Sila pilih tarikh'); return; }
     if (form.end_date < form.start_date) { alert('Tarikh tamat mestilah selepas tarikh mula'); return; }
     setSubmitting(true);
-    const res = await fetch(`${API_URL}/api/pto`, {
-      method: 'POST', headers,
+    const res = await apiFetch('/api/pto', {
+      method: 'POST',
+      token,
       body: JSON.stringify(form),
     });
     const data = await res.json();

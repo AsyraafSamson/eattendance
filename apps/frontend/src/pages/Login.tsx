@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiUrl, fetchPublicAppInfo } from '../lib/api';
 
 type GoogleUser = { id: string; name: string; role: string; employee_id: string; email: string };
 
@@ -9,11 +8,14 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [officeName, setOfficeName] = useState('Memuatkan...');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
 
   useEffect(() => {
+    void fetchPublicAppInfo().then((info) => setOfficeName(info.officeName)).catch(() => {});
+
     const params = new URLSearchParams(window.location.search);
     const googleToken = params.get('google_token');
     const googleUser  = params.get('google_user');
@@ -39,11 +41,11 @@ export default function Login() {
       setError(messages[googleError] ?? `Ralat: ${googleError}`);
       window.history.replaceState({}, '', '/login');
     }
-  }, []);
+  }, [loginWithGoogle]);
 
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = `${API_URL}/api/auth/google/login-start`;
+    window.location.href = apiUrl('/api/auth/google/login-start');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +68,7 @@ export default function Login() {
         <div className="bg-blue-600 px-6 py-8 text-center text-white">
           <div className="text-4xl mb-2">🏥</div>
           <h1 className="text-2xl font-bold">E-Attendance</h1>
-          <p className="text-blue-200 text-sm mt-1">ILKKM Johor Bahru</p>
+          <p className="text-blue-200 text-sm mt-1">{officeName}</p>
         </div>
         <div className="px-6 pt-6 pb-2 space-y-3">
           {/* Google Sign-in */}

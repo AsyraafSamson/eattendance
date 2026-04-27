@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { sign, verify } from 'hono/jwt'
 import { getDistanceMeters } from '../lib/geo'
 import type { Bindings, Variables, User } from '../types'
+import { getAppSettings } from '../lib/settings'
 
 const googleAuth = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
@@ -60,7 +61,8 @@ googleAuth.get('/callback', async (c) => {
   const code  = c.req.query('code')
   const state = c.req.query('state')
   const oauthError = c.req.query('error')
-  const frontendUrl = c.env.FRONTEND_URL || 'http://localhost:5173'
+  const settings = await getAppSettings(c.env.DB)
+  const frontendUrl = settings.frontendUrl
 
   if (oauthError || !code || !state) {
     return c.redirect(`${frontendUrl}/login?google_error=cancelled`)
@@ -139,13 +141,10 @@ googleAuth.get('/callback', async (c) => {
   if (!devMode && stateData.lat && stateData.lng) {
     const lat      = parseFloat(stateData.lat)
     const lng      = parseFloat(stateData.lng)
-    const officeLat = parseFloat(c.env.OFFICE_LAT)
-    const officeLng = parseFloat(c.env.OFFICE_LNG)
-    const radius    = parseFloat(c.env.OFFICE_RADIUS_METERS)
-    const distance  = getDistanceMeters(lat, lng, officeLat, officeLng)
-    if (distance > radius) {
+    const distance  = getDistanceMeters(lat, lng, settings.officeLat, settings.officeLng)
+    if (distance > settings.officeRadiusMeters) {
       return c.redirect(
-        `${frontendUrl}/attend?google_error=out_of_range&distance=${Math.round(distance)}&radius=${radius}`
+        `${frontendUrl}/attend?google_error=out_of_range&distance=${Math.round(distance)}&radius=${settings.officeRadiusMeters}`
       )
     }
   }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
+import { formatMalaysiaDateLabel, formatMalaysiaTime } from '../lib/date';
 
 type AttendanceRecord = {
   id: string;
@@ -24,11 +24,6 @@ type Notification = {
   created_at: string;
 };
 
-function fmtTime(ts: string) {
-  return new Date(ts.replace(' ', 'T') + (ts.includes('+') ? '' : 'Z'))
-    .toLocaleTimeString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', minute: '2-digit' });
-}
-
 export default function EmployeeDashboard() {
   const { token, user, logout } = useAuth();
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
@@ -41,17 +36,15 @@ export default function EmployeeDashboard() {
   const [breakLoading, setBreakLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  const headers = { Authorization: `Bearer ${token}` };
-
   const fetchAll = useCallback(async () => {
     if (!token) return;
     setFetching(true);
     try {
       const [histRes, todayRes, breakRes, notifRes] = await Promise.all([
-        fetch(`${API_URL}/api/attendance/history?limit=50`, { headers }),
-        fetch(`${API_URL}/api/attendance/today`, { headers }),
-        fetch(`${API_URL}/api/breaks/today`, { headers }),
-        fetch(`${API_URL}/api/notifications?limit=10`, { headers }),
+        apiFetch('/api/attendance/history?limit=50', { token }),
+        apiFetch('/api/attendance/today', { token }),
+        apiFetch('/api/breaks/today', { token }),
+        apiFetch('/api/notifications?limit=10', { token }),
       ]);
       const [hist, today, brk, notif] = await Promise.all([
         histRes.json(), todayRes.json(), breakRes.json(), notifRes.json(),
@@ -76,8 +69,9 @@ export default function EmployeeDashboard() {
     setBreakLoading(true);
     try {
       const endpoint = isOnBreak ? '/api/breaks/end' : '/api/breaks/start';
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+      const res = await apiFetch(endpoint, {
+        method: 'POST',
+        token,
       });
       const data = await res.json();
       if (!res.ok) { alert(data.error); return; }
@@ -88,16 +82,14 @@ export default function EmployeeDashboard() {
   };
 
   const markAllRead = async () => {
-    await fetch(`${API_URL}/api/notifications/read-all`, { method: 'PATCH', headers });
+    await apiFetch('/api/notifications/read-all', { method: 'PATCH', token });
     setUnreadCount(0);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
   };
 
   // Group history by date
   const grouped = history.reduce<Record<string, AttendanceRecord[]>>((acc, rec) => {
-    const date = new Date(rec.timestamp.replace(' ', 'T') + 'Z').toLocaleDateString('ms-MY', {
-      timeZone: 'Asia/Kuala_Lumpur', weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-    });
+    const date = formatMalaysiaDateLabel(rec.timestamp);
     (acc[date] ??= []).push(rec);
     return acc;
   }, {});
@@ -154,7 +146,7 @@ export default function EmployeeDashboard() {
           </p>
           {lastRecord && (
             <p className="text-xs text-gray-500 mt-1">
-              {lastRecord.type === 'check-in' ? 'Masuk' : 'Keluar'}: {fmtTime(lastRecord.timestamp)}
+              {lastRecord.type === 'check-in' ? 'Masuk' : 'Keluar'}: {formatMalaysiaTime(lastRecord.timestamp)}
             </p>
           )}
           {isClockedIn && (
@@ -219,7 +211,7 @@ export default function EmployeeDashboard() {
                         <span className={`font-medium ${rec.type === 'check-in' ? 'text-green-600' : 'text-orange-600'}`}>
                           {rec.type === 'check-in' ? '✅ Check In' : '🔴 Check Out'}
                         </span>
-                        <span className="text-gray-500">{fmtTime(rec.timestamp)}</span>
+                        <span className="text-gray-500">{formatMalaysiaTime(rec.timestamp)}</span>
                       </div>
                     ))}
                   </div>

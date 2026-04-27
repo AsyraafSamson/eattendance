@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { apiFetch } from '../lib/api';
+import { getCurrentMalaysiaMonthPeriod } from '../lib/date';
 
 type Timesheet = {
   id: string;
@@ -25,28 +25,18 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   rejected:  { label: 'Ditolak', color: 'bg-red-100 text-red-600' },
 };
 
-function getPayPeriod() {
-  // Default: current month
-  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
-  return { start: `${y}-${m}-01`, end: `${y}-${m}-${lastDay}` };
-}
-
 export default function TimesheetPage() {
   const { token, user, logout } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const period = getPayPeriod();
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const period = getCurrentMalaysiaMonthPeriod();
 
   const fetchTimesheets = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    const res = await fetch(`${API_URL}/api/timesheets/my`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await apiFetch('/api/timesheets/my', { token });
     const data = await res.json();
     if (Array.isArray(data)) setTimesheets(data);
     setLoading(false);
@@ -56,8 +46,9 @@ export default function TimesheetPage() {
 
   const generateCurrent = async () => {
     setGenerating(true);
-    const res = await fetch(`${API_URL}/api/timesheets/generate`, {
-      method: 'POST', headers,
+    const res = await apiFetch('/api/timesheets/generate', {
+      method: 'POST',
+      token,
       body: JSON.stringify({ period_start: period.start, period_end: period.end }),
     });
     const data = await res.json();
@@ -68,8 +59,9 @@ export default function TimesheetPage() {
 
   const submitTimesheet = async (id: string) => {
     setSubmitting(id);
-    const res = await fetch(`${API_URL}/api/timesheets/${id}/submit`, {
-      method: 'POST', headers,
+    const res = await apiFetch(`/api/timesheets/${id}/submit`, {
+      method: 'POST',
+      token,
     });
     const data = await res.json();
     if (!res.ok) { alert(data.error); }

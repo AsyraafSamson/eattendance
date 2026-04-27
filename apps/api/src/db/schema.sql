@@ -127,10 +127,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Insert default admin (password: admin123)
-INSERT INTO users (employee_id, name, email, password_hash, role)
-SELECT 'ADMIN001', 'System Admin', 'admin@attendance.com', '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrD7QqD.3sL4Z5NQlLqZvZvZvZvZv', 'admin'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@attendance.com');
+-- Application settings
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
 
 -- Default overtime rule
 INSERT INTO overtime_rules (name, daily_threshold_hours, weekly_threshold_hours, multiplier)
