@@ -28,7 +28,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export default function PTOPage() {
-  const { token, user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [requests, setRequests] = useState<PTORequest[]>([]);
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -36,17 +36,17 @@ export default function PTOPage() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ type: 'annual', start_date: '', end_date: '', reason: '' });
   const fetchData = useCallback(async () => {
-    if (!token) return;
+    if (!user) return;
     setLoading(true);
     const [reqRes, balRes] = await Promise.all([
-      apiFetch('/api/pto/my', { token }),
-      apiFetch('/api/pto/balance', { token }),
+      apiFetch('/api/pto/my'),
+      apiFetch('/api/pto/balance'),
     ]);
     const [reqs, bal] = await Promise.all([reqRes.json(), balRes.json()]);
     if (Array.isArray(reqs)) setRequests(reqs);
     if (bal?.balance !== undefined) setBalance(bal.balance);
     setLoading(false);
-  }, [token]);
+  }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -56,7 +56,6 @@ export default function PTOPage() {
     setSubmitting(true);
     const res = await apiFetch('/api/pto', {
       method: 'POST',
-      token,
       body: JSON.stringify(form),
     });
     const data = await res.json();

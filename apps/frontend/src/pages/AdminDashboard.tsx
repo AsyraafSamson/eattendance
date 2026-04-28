@@ -14,19 +14,17 @@ type AttendanceRecord = {
 };
 
 export default function AdminDashboard() {
-  const { token, user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [date, setDate] = useState(() => getMalaysiaToday());
   const [fetching, setFetching] = useState(false);
 
   const fetchAttendance = useCallback(async () => {
-    if (!token) return;
+    if (!user) return;
     setFetching(true);
     try {
-      const res = await apiFetch(`/api/attendance/all?date=${date}`, {
-        token,
-      });
+      const res = await apiFetch(`/api/attendance/all?date=${date}`);
       if (res.status === 401) { logout(); navigate('/login'); return; }
       const data = await res.json();
       if (Array.isArray(data)) setAttendance(data);
@@ -35,7 +33,7 @@ export default function AdminDashboard() {
     } finally {
       setFetching(false);
     }
-  }, [date, token, logout, navigate]);
+  }, [date, user, logout, navigate]);
 
   useEffect(() => {
     fetchAttendance();

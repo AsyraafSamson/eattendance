@@ -25,7 +25,7 @@ type Notification = {
 };
 
 export default function EmployeeDashboard() {
-  const { token, user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [todayRecords, setTodayRecords] = useState<AttendanceRecord[]>([]);
   const [breaks, setBreaks] = useState<BreakRecord[]>([]);
@@ -37,14 +37,14 @@ export default function EmployeeDashboard() {
   const [fetching, setFetching] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    if (!token) return;
+    if (!user) return;
     setFetching(true);
     try {
       const [histRes, todayRes, breakRes, notifRes] = await Promise.all([
-        apiFetch('/api/attendance/history?limit=50', { token }),
-        apiFetch('/api/attendance/today', { token }),
-        apiFetch('/api/breaks/today', { token }),
-        apiFetch('/api/notifications?limit=10', { token }),
+        apiFetch('/api/attendance/history?limit=50'),
+        apiFetch('/api/attendance/today'),
+        apiFetch('/api/breaks/today'),
+        apiFetch('/api/notifications?limit=10'),
       ]);
       const [hist, today, brk, notif] = await Promise.all([
         histRes.json(), todayRes.json(), breakRes.json(), notifRes.json(),
@@ -56,7 +56,7 @@ export default function EmployeeDashboard() {
     } finally {
       setFetching(false);
     }
-  }, [token]);
+  }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -69,10 +69,7 @@ export default function EmployeeDashboard() {
     setBreakLoading(true);
     try {
       const endpoint = isOnBreak ? '/api/breaks/end' : '/api/breaks/start';
-      const res = await apiFetch(endpoint, {
-        method: 'POST',
-        token,
-      });
+      const res = await apiFetch(endpoint, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { alert(data.error); return; }
       await fetchAll();
@@ -82,7 +79,7 @@ export default function EmployeeDashboard() {
   };
 
   const markAllRead = async () => {
-    await apiFetch('/api/notifications/read-all', { method: 'PATCH', token });
+    await apiFetch('/api/notifications/read-all', { method: 'PATCH' });
     setUnreadCount(0);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
   };

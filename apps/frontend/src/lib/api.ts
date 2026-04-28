@@ -9,24 +9,17 @@ export function apiUrl(path: string) {
   return path.startsWith('http://') || path.startsWith('https://') ? path : `${API_URL}${path}`;
 }
 
-export function authHeaders(token: string | null, headers?: HeadersInit) {
-  const merged = new Headers(headers);
-  if (token) {
-    merged.set('Authorization', `Bearer ${token}`);
-  }
-  return merged;
-}
-
 export async function apiFetch(path: string, options: RequestInit & { token?: string | null } = {}) {
-  const { token = null, headers, ...rest } = options;
-  const mergedHeaders = authHeaders(token, headers);
+  // token param accepted for call-site compatibility but ignored — auth is via httpOnly cookie
+  const { token: _ignored, headers, ...rest } = options;
   const method = (rest.method ?? 'GET').toUpperCase();
+  const mergedHeaders = new Headers(headers ?? {});
 
   if (!mergedHeaders.has('Content-Type') && method !== 'GET' && method !== 'HEAD') {
     mergedHeaders.set('Content-Type', 'application/json');
   }
 
-  return fetch(apiUrl(path), { ...rest, headers: mergedHeaders });
+  return fetch(apiUrl(path), { ...rest, headers: mergedHeaders, credentials: 'include' });
 }
 
 export async function fetchPublicAppInfo(): Promise<PublicAppInfo> {

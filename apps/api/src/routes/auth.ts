@@ -1,14 +1,31 @@
 import { Hono } from 'hono'
+import { setCookie, deleteCookie } from 'hono/cookie'
 import bcrypt from 'bcryptjs'
 import { sign } from 'hono/jwt'
 import type { Bindings, Variables, User } from '../types'
 import { authMiddleware, adminOnly } from '../middleware/auth'
+import { loginRateLimit, recordFailedLogin, clearLoginAttempts } from '../middleware/rate-limit'
 
 const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
+function setAuthCookie(c: { env: Bindings; header: (name: string, value: string) => void }, token: string) {
+  const isDevMode = c.env.DEV_MODE === 'true'
+  // SameSite=None; Secure required for cross-site cookies (Workers ↔ Pages on different domains)
+  // SameSite=Lax used in dev mode (localhost, no HTTPS)
+  const cookieValue = [
+    `auth_token=${token}`,
+    'HttpOnly',
+    'Path=/',
+    `Max-Age=${60 * 60 * 24}`,
+    isDevMode ? 'SameSite=Lax' : 'SameSite=None; Secure',
+  ].join('; ')
+  c.header('Set-Cookie', cookieValue)
+}
+
 // POST /api/auth/login
-auth.post('/login', async (c) => {
+auth.post('/login', loginRateLimit, async (c) => {
   const { email, password } = await c.req.json<{ email: string; password: string }>()
+  const ip = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? 'unknown'
 
   if (!email || !password) {
     return c.json({ error: 'Email and password required' }, 400)
@@ -19,6 +36,7 @@ auth.post('/login', async (c) => {
   ).bind(email).first<User>()
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    await recordFailedLogin(c.env.DB, ip)
     return c.json({ error: 'Invalid credentials' }, 401)
   }
 
@@ -27,14 +45,16 @@ auth.post('/login', async (c) => {
       sub: user.id,
       role: user.role,
       name: user.name,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
     },
     c.env.JWT_SECRET,
     'HS256'
   )
 
+  await clearLoginAttempts(c.env.DB, ip)
+  setAuthCookie(c, token)
+
   return c.json({
-    token,
     user: {
       id: user.id,
       employee_id: user.employee_id,
@@ -43,6 +63,20 @@ auth.post('/login', async (c) => {
       role: user.role,
     },
   })
+})
+
+// POST /api/auth/logout
+auth.post('/logout', async (c) => {
+  const isDevMode = c.env.DEV_MODE === 'true'
+  const cookieValue = [
+    'auth_token=',
+    'HttpOnly',
+    'Path=/',
+    'Max-Age=0',
+    isDevMode ? 'SameSite=Lax' : 'SameSite=None; Secure',
+  ].join('; ')
+  c.header('Set-Cookie', cookieValue)
+  return c.json({ success: true })
 })
 
 // POST /api/auth/register (admin only)

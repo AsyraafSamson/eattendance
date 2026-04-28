@@ -130,10 +130,20 @@ googleAuth.get('/callback', async (c) => {
       c.env.JWT_SECRET,
       'HS256'
     )
+    // Set httpOnly cookie — never expose JWT in the URL
+    const isDevMode = c.env.DEV_MODE === 'true'
+    const cookieValue = [
+      `auth_token=${token}`,
+      'HttpOnly',
+      'Path=/',
+      `Max-Age=${60 * 60 * 24}`,
+      isDevMode ? 'SameSite=Lax' : 'SameSite=None; Secure',
+    ].join('; ')
+    c.header('Set-Cookie', cookieValue)
     const userData = encodeURIComponent(JSON.stringify({
       id: user.id, employee_id: user.employee_id, name: user.name, email: user.email, role: user.role,
     }))
-    return c.redirect(`${frontendUrl}/login?google_token=${token}&google_user=${userData}`)
+    return c.redirect(`${frontendUrl}/login?google_user=${userData}`)
   }
 
   // ── ATTEND flow ───────────────────────────────────────────────────────────

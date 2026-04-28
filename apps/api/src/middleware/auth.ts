@@ -1,17 +1,26 @@
 import { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
+import { getCookie } from 'hono/cookie'
 import type { Bindings, Variables } from '../types'
 
 export const authMiddleware = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
   next: Next
 ) => {
-  const auth = c.req.header('Authorization')
-  if (!auth?.startsWith('Bearer ')) {
+  // Prefer httpOnly cookie; fall back to Bearer header for API clients
+  let token = getCookie(c, 'auth_token')
+
+  if (!token) {
+    const authHeader = c.req.header('Authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7)
+    }
+  }
+
+  if (!token) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const token = auth.slice(7)
   try {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
     c.set('userId', payload.sub as string)
@@ -32,7 +41,6 @@ export const adminOnly = async (
   await next()
 }
 
-// Allows both manager and admin
 export const managerOrAdmin = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
   next: Next

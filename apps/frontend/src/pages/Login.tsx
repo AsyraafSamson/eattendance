@@ -17,15 +17,14 @@ export default function Login() {
     void fetchPublicAppInfo().then((info) => setOfficeName(info.officeName)).catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
-    const googleToken = params.get('google_token');
     const googleUser  = params.get('google_user');
     const googleError = params.get('google_error');
     const email       = params.get('email');
 
-    if (googleToken && googleUser) {
+    if (googleUser) {
       try {
         const user = JSON.parse(decodeURIComponent(googleUser)) as GoogleUser;
-        loginWithGoogle(googleToken, user);
+        loginWithGoogle(user);
         window.history.replaceState({}, '', '/login');
       } catch {
         setError('Ralat membaca data Google. Cuba lagi.');

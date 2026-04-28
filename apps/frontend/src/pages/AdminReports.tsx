@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, apiUrl } from '../lib/api';
+import { apiFetch } from '../lib/api';
 import { getCurrentMalaysiaMonthPeriod } from '../lib/date';
 
 type ReportEmployee = {
@@ -31,7 +31,7 @@ type Report = {
 };
 
 export default function AdminReports() {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const def = getCurrentMalaysiaMonthPeriod();
   const [start, setStart] = useState(def.start);
   const [end, setEnd] = useState(def.end);
@@ -40,15 +40,23 @@ export default function AdminReports() {
   const fetchReport = async () => {
     if (!start || !end) { alert('Sila pilih tempoh'); return; }
     setLoading(true);
-    const res = await apiFetch(`/api/reports/payroll?period_start=${start}&period_end=${end}`, { token });
+    const res = await apiFetch(`/api/reports/payroll?period_start=${start}&period_end=${end}`);
     const data = await res.json();
     if (!res.ok) { alert(data.error); setLoading(false); return; }
     setReport(data);
     setLoading(false);
   };
 
-  const downloadCSV = () => {
-    window.open(apiUrl(`/api/reports/payroll/csv?period_start=${start}&period_end=${end}`), '_blank');
+  const downloadCSV = async () => {
+    const res = await apiFetch(`/api/reports/payroll/csv?period_start=${start}&period_end=${end}`);
+    if (!res.ok) { alert('Gagal muat turun CSV'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payroll_${start}_${end}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (

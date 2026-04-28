@@ -42,7 +42,7 @@ type PendingPTO = {
 };
 
 export default function ManagerDashboard() {
-  const { token, user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const today = getMalaysiaToday();
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [date, setDate] = useState(today);
@@ -50,17 +50,17 @@ export default function ManagerDashboard() {
   const [pendingPTO, setPendingPTO] = useState<PendingPTO[]>([]);
   const [loading, setLoading] = useState(false);
   const fetchAll = useCallback(async () => {
-    if (!token) return;
+    if (!user) return;
     const [attRes, tsRes, ptoRes] = await Promise.all([
-      apiFetch(`/api/manager/attendance?date=${date}`, { token }),
-      apiFetch('/api/manager/timesheets/pending', { token }),
-      apiFetch('/api/manager/pto/pending', { token }),
+      apiFetch(`/api/manager/attendance?date=${date}`),
+      apiFetch('/api/manager/timesheets/pending'),
+      apiFetch('/api/manager/pto/pending'),
     ]);
     const [att, ts, pto] = await Promise.all([attRes.json(), tsRes.json(), ptoRes.json()]);
     if (Array.isArray(att)) setAttendance(att);
     if (Array.isArray(ts)) setPendingTS(ts);
     if (Array.isArray(pto)) setPendingPTO(pto);
-  }, [token, date]);
+  }, [user, date]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -68,7 +68,6 @@ export default function ManagerDashboard() {
     setLoading(true);
       const res = await apiFetch(`/api/timesheets/${id}/${action}`, {
         method: 'POST',
-        token,
         body: JSON.stringify({ notes }),
       });
     if (res.ok) {
@@ -84,7 +83,6 @@ export default function ManagerDashboard() {
     setLoading(true);
       const res = await apiFetch(`/api/pto/${id}/${action}`, {
         method: 'POST',
-        token,
         body: JSON.stringify({ notes }),
       });
     if (res.ok) {

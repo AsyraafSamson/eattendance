@@ -29,7 +29,7 @@ const roleBadge = (role: string) => {
 const roleLabel = (role: string) => role === 'admin' ? 'Admin' : role === 'manager' ? 'Pengurus' : 'Pekerja';
 
 export default function AdminUsers() {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,17 +46,16 @@ export default function AdminUsers() {
   const [editForm, setEditForm] = useState<EditForm | null>(null);
 
   const fetchUsers = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await apiFetch('/api/users', { token });
+      const res = await apiFetch('/api/users');
       if (res.status === 401) { logout(); navigate('/login'); return; }
       const data = await res.json();
       if (Array.isArray(data)) setUsers(data);
     } finally {
       setLoading(false);
     }
-  }, [token, logout, navigate]);
+  }, [logout, navigate]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -80,7 +79,6 @@ export default function AdminUsers() {
       if (!body.department) delete body.department;
       const res = await apiFetch('/api/users', {
         method: 'POST',
-        token,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -112,7 +110,6 @@ export default function AdminUsers() {
       };
       const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
-        token,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -123,13 +120,13 @@ export default function AdminUsers() {
   };
 
   const handleToggle = async (user: User) => {
-    const res = await apiFetch(`/api/users/${user.id}/toggle`, { method: 'PATCH', token });
+    const res = await apiFetch(`/api/users/${user.id}/toggle`, { method: 'PATCH' });
     if (res.ok) fetchUsers();
   };
 
   const handleDelete = async (user: User) => {
     if (!confirm(`Padam pengguna "${user.name}"? Tindakan ini tidak boleh dibuat alik.`)) return;
-    const res = await apiFetch(`/api/users/${user.id}`, { method: 'DELETE', token });
+    const res = await apiFetch(`/api/users/${user.id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) { alert(data.error); return; }
     fetchUsers();
@@ -142,7 +139,6 @@ export default function AdminUsers() {
     try {
       const res = await apiFetch(`/api/users/${resetTarget.id}/password`, {
         method: 'PATCH',
-        token,
         body: JSON.stringify({ password: newPassword }),
       });
       const data = await res.json();

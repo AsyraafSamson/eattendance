@@ -138,3 +138,13 @@ CREATE TABLE IF NOT EXISTS app_settings (
 INSERT INTO overtime_rules (name, daily_threshold_hours, weekly_threshold_hours, multiplier)
 SELECT 'Standard OT', 8, 40, 1.5
 WHERE NOT EXISTS (SELECT 1 FROM overtime_rules);
+
+-- Login attempt tracking for rate limiting
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT NOT NULL,
+  attempted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_at ON login_attempts(attempted_at);

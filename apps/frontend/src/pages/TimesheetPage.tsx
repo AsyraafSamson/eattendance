@@ -26,7 +26,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export default function TimesheetPage() {
-  const { token, user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -34,13 +34,13 @@ export default function TimesheetPage() {
   const period = getCurrentMalaysiaMonthPeriod();
 
   const fetchTimesheets = useCallback(async () => {
-    if (!token) return;
+    if (!user) return;
     setLoading(true);
-    const res = await apiFetch('/api/timesheets/my', { token });
+    const res = await apiFetch('/api/timesheets/my');
     const data = await res.json();
     if (Array.isArray(data)) setTimesheets(data);
     setLoading(false);
-  }, [token]);
+  }, [user]);
 
   useEffect(() => { fetchTimesheets(); }, [fetchTimesheets]);
 
@@ -48,7 +48,6 @@ export default function TimesheetPage() {
     setGenerating(true);
     const res = await apiFetch('/api/timesheets/generate', {
       method: 'POST',
-      token,
       body: JSON.stringify({ period_start: period.start, period_end: period.end }),
     });
     const data = await res.json();
@@ -59,10 +58,7 @@ export default function TimesheetPage() {
 
   const submitTimesheet = async (id: string) => {
     setSubmitting(id);
-    const res = await apiFetch(`/api/timesheets/${id}/submit`, {
-      method: 'POST',
-      token,
-    });
+    const res = await apiFetch(`/api/timesheets/${id}/submit`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) { alert(data.error); }
     else { await fetchTimesheets(); }
